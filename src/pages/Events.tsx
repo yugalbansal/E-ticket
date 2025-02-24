@@ -1,19 +1,53 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Filter } from 'lucide-react';
 import EventCard from '../components/EventCard';
 import { useEventStore } from '../store/eventStore';
+import toast from 'react-hot-toast';
 
 const CATEGORIES = ['All', 'Concerts', 'Comedy', 'Sports', 'Theater', 'Festivals'];
 
 const Events = () => {
-  const [selectedCategory, setSelectedCategory] = React.useState('All');
-  const { events } = useEventStore();
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const { events, loading, error, fetchEvents } = useEventStore();
+
+  useEffect(() => {
+    fetchEvents().catch(() => {
+      toast.error('Failed to load events');
+    });
+  }, [fetchEvents]);
 
   const filteredEvents = selectedCategory === 'All'
     ? events
     : events.filter(event => 
         event.category === selectedCategory.toLowerCase().slice(0, -1)
       );
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading events...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center text-red-600">
+          <p>{error}</p>
+          <button 
+            onClick={() => fetchEvents()} 
+            className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">

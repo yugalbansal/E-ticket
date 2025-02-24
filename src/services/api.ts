@@ -30,6 +30,29 @@ export const auth = {
   loginWithMetaMask: async (address: string) => {
     const response = await api.post('/auth/metamask', { address });
     return response.data;
+  },
+  addTicket: async (ticketData: any) => {
+    const response = await api.post('/tickets', ticketData);
+    return response.data;
+  }
+};
+
+export const events = {
+  getAll: async () => {
+    const response = await api.get('/events');
+    return response.data;
+  },
+  create: async (eventData: any) => {
+    const response = await api.post('/events', eventData);
+    return response.data;
+  },
+  update: async (id: string, eventData: any) => {
+    const response = await api.put(`/events/${id}`, eventData);
+    return response.data;
+  },
+  delete: async (id: string) => {
+    const response = await api.delete(`/events/${id}`);
+    return response.data;
   }
 };
 

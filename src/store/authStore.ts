@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { auth } from '../services/api';
 
 interface Ticket {
   id: string;
@@ -31,7 +31,7 @@ interface AuthState {
   isAuthenticated: boolean;
   login: (userData: User) => void;
   logout: () => void;
-  addTicket: (ticket: Ticket) => void;
+  addTicket: (ticket: Ticket) => Promise<void>;
 }
 
 // Mock passwords - in a real app, these would be properly hashed and stored securely
@@ -41,25 +41,37 @@ const ORGANIZER_PASSWORD = 'organizer123';
 export const validateAdminPassword = (password: string) => password === ADMIN_PASSWORD;
 export const validateOrganizerPassword = (password: string) => password === ORGANIZER_PASSWORD;
 
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set) => ({
-      user: null,
-      isAuthenticated: false,
-      login: (userData) => set({ user: userData, isAuthenticated: true }),
-      logout: () => set({ user: null, isAuthenticated: false }),
-      addTicket: (ticket) =>
-        set((state) => ({
-          user: state.user
-            ? {
-                ...state.user,
-                tickets: [...(state.user.tickets || []), ticket],
-              }
-            : null,
-        })),
-    }),
-    {
-      name: 'auth-storage',
+export const useAuthStore = create<AuthState>()((set) => ({
+  user: null,
+  isAuthenticated: false,
+  login: async (userData) => {
+    // Store the token in localStorage
+    if (userData.id) {
+      localStorage.setItem('token', userData.id);
     }
-  )
-);
+    set({ user: userData, isAuthenticated: true });
+  },
+  logout: () => {
+    localStorage.removeItem('token');
+    set({ user: null, isAuthenticated: false });
+  },
+  addTicket: async (ticket) => {
+    try {
+      // Save ticket to backend
+      await auth.addTicket(ticket);
+      
+      // Update local state
+      set((state) => ({
+        user: state.user
+          ? {
+              ...state.user,
+              tickets: [...(state.user.tickets || []), ticket],
+            }
+          : null,
+      }));
+    } catch (error) {
+      console.error('Failed to add ticket:', error);
+      throw error;
+    }
+  },
+}));
